@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Interactive Clock</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Cinzel:wght@400;700&family=Poppins:wght@400;700&family=Silkscreen&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #00ff9d;
+            --bg-color: #1a1a1a;
+            --clock-font: 'Orbitron', sans-serif;
+        }
+
+        /* Custom Font Faces */
+        @font-face {
+            font-family: 'Digital-7';
+            src: url('https://cdn.jsdelivr.net/npm/digital-7@1.0.0/digital-7.mono.ttf') format('truetype');
+        }
+
+        /* Font Classes */
+        .digital-font { font-family: 'Orbitron', sans-serif; }
+        .analog-font { font-family: 'Cinzel', serif; }
+        .modern-font { font-family: 'Poppins', sans-serif; }
+        .led-font { font-family: 'Digital-7', monospace; }
+        .pixel-font { font-family: 'Silkscreen', cursive; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--bg-color);
+            transition: all 0.3s ease;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .clock-container {
+            background: #2d2d2d;
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+            cursor: move;
+            transition: transform 0.3s ease;
+        }
+
+        #clock {
+            color: var(--primary-color);
+            font-size: 4em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        select, button {
+            padding: 10px;
+            border-radius: 5px;
+            background: #3d3d3d;
+            color: white;
+            border: 1px solid var(--primary-color);
+            cursor: pointer;
+        }
+
+        .date-section {
+            color: #ffffff;
+            font-size: 1.2em;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <select id="fontSelect">
+            <option value="digital-font">Digital Font</option>
+            <option value="analog-font">Analog Style</option>
+            <option value="modern-font">Modern Font</option>
+            <option value="led-font">LED Display</option>
+            <option value="pixel-font">Pixel Style</option>
+        </select>
+        <button id="themeBtn">Random Theme</button>
+        <select id="timezoneSelect">
+            <option value="local">Local Time</option>
+            <option value="UTC">UTC</option>
+        </select>
+        <button id="toggleDate">Toggle Date</button>
+    </div>
+
+    <div class="clock-container" id="draggable">
+        <div id="clock">00:00:00</div>
+        <div class="date-section" id="date"></div>
+    </div>
+
+    <script>
+        // Font Customization System
+        const fontSelect = document.getElementById('fontSelect');
+        
+        // Load saved preferences
+        const savedFont = localStorage.getItem('clockFont') || 'digital-font';
+        document.getElementById('clock').className = savedFont;
+        fontSelect.value = savedFont;
+
+        fontSelect.addEventListener('change', function() {
+            document.getElementById('clock').className = this.value;
+            localStorage.setItem('clockFont', this.value);
+        });
+
+        // Theme System
+        document.getElementById('themeBtn').addEventListener('click', () => {
+            const hue = Math.floor(Math.random() * 360);
+            document.documentElement.style.setProperty('--primary-color', `hsl(${hue}, 100%, 50%)`);
+            document.body.style.background = `hsl(${hue}, 50%, 10%)`;
+        });
+
+        // Time System
+        let currentTimezone = 'local';
+        
+        function updateClock() {
+            const now = currentTimezone === 'local' ? new Date() : 
+                new Date(new Date().toLocaleString('en-US', { timeZone: 'UTC' }));
+            
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            
+            const dateOptions = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+
+            document.getElementById('clock').textContent = 
+                now.toLocaleTimeString('en-US', timeOptions);
+            document.getElementById('date').textContent = 
+                now.toLocaleDateString('en-US', dateOptions);
+        }
+
+        document.getElementById('timezoneSelect').addEventListener('change', (e) => {
+            currentTimezone = e.target.value;
+            updateClock();
+        });
+
+        // Date Toggle
+        document.getElementById('toggleDate').addEventListener('click', () => {
+            const dateElement = document.getElementById('date');
+            dateElement.style.display = dateElement.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Draggable System
+        let isDragging = false;
+        let offset = [0, 0];
+
+        document.getElementById('draggable').addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offset = [
+                e.target.offsetLeft - e.clientX,
+                e.target.offsetTop - e.clientY
+            ];
+        }, true);
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            e.preventDefault();
+            if (isDragging) {
+                const draggable = document.getElementById('draggable');
+                draggable.style.left = (e.clientX + offset[0]) + 'px';
+                draggable.style.top = (e.clientY + offset[1]) + 'px';
+            }
+        });
+
+        // Initialize
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
